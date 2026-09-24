@@ -1,124 +1,115 @@
 # TECH ODYSSEY 2026 — TECH EMERGENCY ROOM
-## ROUND 2 WEBSITE #1: NOVA MART (E-COMMERCE DEBUGGING CHALLENGE)
+## ROUND 2 WEBSITE #2: SKILLFORGE (ONLINE LEARNING DEBUGGING CHALLENGE)
 ### ORGANIZER BUG MAP (CONFIDENTIAL — DO NOT PUBLISH TO PARTICIPANTS)
 
 ---
 
 ### BUG-01
-**Feature:** Product Search  
-**Expected:** Typing a search term (e.g., "watch", "headphones") in the search input and pressing the Search button or submitting the search form should filter products containing the search query in their name, category, or description.  
-**Actual:** The search input updates text locally, but clicking the Search button or submitting the form does not filter products.  
-**Likely root cause:** In `src/components/Header.tsx`, the `handleSearchSubmit` function receives `searchInput` state but fails to invoke `setSearchQuery(searchInput)` to update the global `searchQuery` state in `ShopContext`.  
-**How to verify:** Type "watch" into the search bar and click the search magnifying glass icon button. Observe that the product list does not filter.  
-**Expected fix:** In `src/components/Header.tsx`, update `handleSearchSubmit`:
+**Feature:** Login Form Validation  
+**Expected:** Email and password are required. Submitting the login form with empty fields should block submission and display a validation error message.  
+**Actual:** The Login button allows submission even when email and password fields are completely empty.  
+**Likely root cause:** In `src/app/login/page.tsx`, `handleSubmit` skips the empty input validation check and directly invokes `login(email, password)` and `router.push('/dashboard')`.  
+**How to reproduce:** Navigate to `/login`, leave Email and Password fields empty, and click "Log In". Observe that the user is logged in and redirected to the dashboard without validation error.  
+**Expected fix:** In `src/app/login/page.tsx`, restore the validation check in `handleSubmit`:
 ```tsx
-const handleSearchSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  setSearchQuery(searchInput);
-};
+if (!email.trim() || !password.trim()) {
+  setError('Please provide both email and password.');
+  return;
+}
 ```
 
 ---
 
 ### BUG-02
-**Feature:** Add to Cart from Product Cards  
-**Expected:** Clicking the "Add" / "Add to Cart" button on a product card in the product grid should immediately add 1 unit of that product to the shopping cart.  
-**Actual:** Clicking "Add" on any product card in the grid triggers the button effect but does not add the item to the cart.  
-**Likely root cause:** In `src/components/ProductCard.tsx`, the `handleAddToCartCard` click handler does not call `addToCart(product)`.  
-**How to verify:** Click the "Add" button directly on any product card in the home page grid. Open the cart drawer and observe the cart is empty or item count did not increase.  
-**Expected fix:** In `src/components/ProductCard.tsx`, update `handleAddToCartCard`:
+**Feature:** Course Catalogue Filtering  
+**Expected:** Selecting a category filter (e.g. "Web Development") should filter courses matching `course.category === selectedCategory`.  
+**Actual:** Selecting a category filter returns incorrect courses or no courses at all.  
+**Likely root cause:** In `src/app/courses/page.tsx`, the `useMemo` category filter compares `course.level === selectedCategory` instead of `course.category === selectedCategory`.  
+**How to reproduce:** Navigate to `/courses`, select Category "Web Development". Observe that no courses or wrong courses are displayed because category is checked against course difficulty level.  
+**Expected fix:** In `src/app/courses/page.tsx`, update the category comparison in `filteredCourses`:
 ```tsx
-const handleAddToCartCard = (e: React.MouseEvent) => {
-  e.stopPropagation();
-  addToCart(product);
-};
+if (selectedCategory !== 'All') {
+  if (course.category !== selectedCategory) return false;
+}
 ```
 
 ---
 
 ### BUG-03
-**Feature:** Cart Item Quantity Controls (+ / −)  
-**Expected:** In the cart drawer, clicking `+` increases quantity by 1 and clicking `−` decreases quantity by 1 (with minimum quantity = 1).  
-**Actual:** Clicking `+` or `−` in the cart drawer calls the handler, but the displayed quantity and item state do not change.  
-**Likely root cause:** In `src/context/ShopContext.tsx`, `updateQuantity` maps over `cart` items but returns `{ ...item, quantity: item.quantity }` instead of `{ ...item, quantity: newQuantity }`.  
-**How to verify:** Add a product to the cart (via product detail modal), open the cart drawer, and click `+` or `−`. Observe that the quantity number remains static.  
-**Expected fix:** In `src/context/ShopContext.tsx`, fix `updateQuantity`:
+**Feature:** Video Lesson Player Playback  
+**Expected:** Clicking the Play button on the video player should toggle playback state (`isPlaying = true`) and start playing the video lesson.  
+**Actual:** Clicking the Play button fails to trigger playback state.  
+**Likely root cause:** In `src/components/VideoPlayer.tsx`, the `handlePlayPause` click handler sets `setIsPlaying(false)` instead of `setIsPlaying(!isPlaying)`.  
+**How to reproduce:** Navigate to any lesson player screen (e.g. `/courses/course-1/learn`), click the center Play button or control bar Play button. Observe that video playback does not activate.  
+**Expected fix:** In `src/components/VideoPlayer.tsx`, update `handlePlayPause`:
 ```tsx
-const updateQuantity = (productId: string, newQuantity: number) => {
-  if (newQuantity < 1) return;
-  setCart(prevCart =>
-    prevCart.map(item =>
-      item.product.id === productId
-        ? { ...item, quantity: newQuantity }
-        : item
-    )
-  );
+const handlePlayPause = () => {
+  setIsPlaying(!isPlaying);
 };
 ```
 
 ---
 
 ### BUG-04
-**Feature:** Cart Subtotal & Total Dynamic Recalculation  
-**Expected:** When items are added, removed, or quantities change in the cart, the cart subtotal, delivery fee, discount, and total amount must recalculate immediately.  
-**Actual:** The cart total and subtotal remain frozen at the initial computed value (e.g. $0.00 or initial amount) when cart state changes.  
-**Likely root cause:** In `src/context/ShopContext.tsx`, `subtotal` is memoized with `useMemo(..., [])` using an empty dependency array `[]`, preventing recalculation when `cart` changes.  
-**How to verify:** Add multiple products to cart or change items. Observe that the subtotal and total shown at the bottom of the cart drawer do not update dynamically.  
-**Expected fix:** In `src/context/ShopContext.tsx`, add `[cart]` to `useMemo`:
+**Feature:** Student Dashboard Course Progress Calculation  
+**Expected:** Completing lessons should dynamically update and increase displayed course progress percentage on the student dashboard (`completedLessons / totalLessons * 100`).  
+**Actual:** Completing lessons does not correctly update the displayed course progress, leaving it stale/incorrect.  
+**Likely root cause:** In `src/context/LearningContext.tsx`, `getCourseProgress` calculates percentage by dividing completed lessons length by a hardcoded denominator of `100` (`completedList.length / 100 * 100`) instead of calculating against total lessons in the course (`course.modules.flatMap(m => m.lessons).length`).  
+**How to reproduce:** In lesson player (`/courses/course-1/learn`), click "Mark as Complete" on multiple lessons, then navigate to `/dashboard`. Observe that the course progress percentage displays an incorrect value (e.g. 1-2%).  
+**Expected fix:** In `src/context/LearningContext.tsx`, update `getCourseProgress`:
 ```tsx
-const subtotal = useMemo(() => {
-  return cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-}, [cart]);
-```
-
----
-
-### BUG-05
-**Feature:** Cart Item Removal  
-**Expected:** Clicking the trash / Remove icon button on a cart item removes exactly that specific product from the cart.  
-**Actual:** Clicking Remove on a product in the cart removes a different (wrong) product from the cart.  
-**Likely root cause:** In `src/context/ShopContext.tsx`, `removeFromCart` finds `targetIndex` but filters out `(targetIndex + 1) % prevCart.length` instead of `targetIndex`.  
-**How to verify:** Add Product A and Product B to the cart. Click the Remove trash icon next to Product A. Observe that Product B is removed instead.  
-**Expected fix:** In `src/context/ShopContext.tsx`, update `removeFromCart`:
-```tsx
-const removeFromCart = (productId: string) => {
-  setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+const getCourseProgress = (courseId: string): number => {
+  const course = COURSES.find(c => c.id === courseId);
+  if (!course) return 0;
+  const completedList = completedLessonIds[courseId] || [];
+  const totalLessons = course.modules.flatMap(m => m.lessons).length;
+  if (totalLessons === 0) return 0;
+  return Math.round((completedList.length / totalLessons) * 100);
 };
 ```
 
 ---
 
-### BUG-06
-**Feature:** Checkout Form Validation  
-**Expected:** The checkout form must validate required fields (Full Name, Email, Phone, Address, City, Pincode) and block submission if any required field is empty.  
-**Actual:** Submitting the checkout form with empty fields bypasses validation and successfully places the order.  
-**Likely root cause:** In `src/components/CheckoutModal.tsx`, `validateForm()` checks errors and populates `newErrors`, but explicitly `return true;` unconditionally at the end instead of returning `Object.keys(newErrors).length === 0`.  
-**How to verify:** Click "Proceed to Checkout" in the cart drawer. Leave all form fields blank and click "Place Order". Observe that the order confirmation modal opens successfully despite missing fields.  
-**Expected fix:** In `src/components/CheckoutModal.tsx`, update `validateForm`:
+### BUG-05
+**Feature:** Course Quiz Score Calculation  
+**Expected:** Quiz score percentage should equal `(correctAnswersCount / totalQuestionsCount) * 100` (e.g. 4 correct out of 5 questions = 80%).  
+**Actual:** The calculated score percentage is completely incorrect (e.g. 4 correct out of 5 questions displays 20%).  
+**Likely root cause:** In `src/app/courses/[id]/quiz/page.tsx`, `handleSubmitQuiz` computes percentage by dividing `correctCount` by `(totalQuestions * 4)` instead of `totalQuestions`.  
+**How to reproduce:** Take a course quiz (e.g. `/courses/course-1/quiz`), select 4 correct answers out of 5 questions, click Submit Quiz. Observe that the computed final score percentage reads 20% instead of 80%.  
+**Expected fix:** In `src/app/courses/[id]/quiz/page.tsx`, update `handleSubmitQuiz`:
 ```tsx
-const validateForm = (): boolean => {
-  const newErrors: Record<string, string> = {};
-  if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
-  if (!formData.email.trim()) newErrors.email = 'Email address is required';
-  if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-  if (!formData.address.trim()) newErrors.address = 'Street address is required';
-  if (!formData.city.trim()) newErrors.city = 'City is required';
-  if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
+const percentage = Math.round((correctCount / totalQuestions) * 100);
+```
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
+---
+
+### BUG-06
+**Feature:** Sequential Lesson Navigation  
+**Expected:** Clicking "Next Lesson" from Lesson 1 should open Lesson 2 (`currentIndex + 1`).  
+**Actual:** Clicking "Next Lesson" opens Lesson 3 (`currentIndex + 2`), skipping Lesson 2.  
+**Likely root cause:** In `src/app/courses/[id]/learn/page.tsx`, `handleNextLesson` increments `currentIndex` by 2 (`currentIndex + 2`) instead of 1 (`currentIndex + 1`).  
+**How to reproduce:** Open Lesson 1 in the lesson player (`/courses/course-1/learn`), click the "Next Lesson" button. Observe that Lesson 3 opens instead of Lesson 2.  
+**Expected fix:** In `src/app/courses/[id]/learn/page.tsx`, update `handleNextLesson`:
+```tsx
+const handleNextLesson = () => {
+  if (currentIndex < allLessons.length - 1) {
+    const nextLesson = allLessons[currentIndex + 1];
+    setCurrentLesson(nextLesson);
+  }
 };
 ```
 
 ---
 
 ### BUG-07
-**Feature:** Mobile Responsive Product Grid Layout  
-**Expected:** On mobile viewports (<640px), product cards should display cleanly in a 2-column layout without overlapping or colliding.  
-**Actual:** Product cards collide and overlap vertically over one another on mobile viewports while desktop and tablet layouts remain visually correct.  
-**Likely root cause:** In `src/components/ProductGrid.tsx`, the grid container includes `-space-y-16 sm:space-y-0` which applies negative vertical spacing on mobile screens.  
-**How to verify:** Resize the browser window to mobile width (<640px) or view on a mobile device emulator. Observe that product cards in lower rows overlap onto upper rows.  
-**Expected fix:** In `src/components/ProductGrid.tsx`, remove `-space-y-16`:
+**Feature:** Mobile Navigation Drawer Toggle  
+**Expected:** On mobile viewports (<768px), clicking the hamburger menu button should toggle open/close the mobile navigation drawer.  
+**Actual:** Clicking the hamburger menu button fails to open the mobile navigation menu.  
+**Likely root cause:** In `src/components/Header.tsx`, `toggleMobileMenu` sets `setIsMobileMenuOpen(false)` instead of `setIsMobileMenuOpen(!isMobileMenuOpen)`.  
+**How to reproduce:** Resize the browser window to mobile width (<768px), click the hamburger icon in the top navigation bar. Observe that the mobile menu drawer does not open.  
+**Expected fix:** In `src/components/Header.tsx`, update `toggleMobileMenu`:
 ```tsx
-<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+const toggleMobileMenu = () => {
+  setIsMobileMenuOpen(!isMobileMenuOpen);
+};
 ```

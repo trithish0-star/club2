@@ -1,136 +1,171 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useShop } from '@/context/ShopContext';
-import { ShoppingBag, Search, ShoppingCart, Sparkles } from 'lucide-react';
-import { Category } from '@/types';
-
-const CATEGORIES: Category[] = ['All', 'Electronics', 'Fashion', 'Home', 'Accessories'];
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { BookOpen, Menu, X, User as UserIcon, LogOut } from 'lucide-react';
+import { useLearning } from '../context/LearningContext';
 
 export const Header: React.FC = () => {
-  const {
-    searchQuery,
-    setSearchQuery,
-    selectedCategory,
-    setSelectedCategory,
-    cart,
-    setIsCartOpen,
-  } = useShop();
+  const pathname = usePathname();
+  const { isLoggedIn, user, logout } = useLearning();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const [searchInput, setSearchInput] = useState(searchQuery);
+  /**
+   * INTENTIONAL BUG 7: Mobile navigation menu button not working
+   * Expected: Toggle `isMobileMenuOpen` state (e.g. `setIsMobileMenuOpen(!isMobileMenuOpen)`).
+   * Actual: Always forces `isMobileMenuOpen` to `false`, preventing the mobile menu from displaying.
+   */
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
-  // Calculate total item count in cart
-  const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
+  const navLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'Courses', href: '/courses' },
+    { name: 'Categories', href: '/courses#categories' },
+    { name: 'My Learning', href: '/dashboard' },
+  ];
 
-  // BUG 1 IMPLEMENTATION:
-  // Typing updates searchInput, but clicking Search button or submitting form does NOT trigger the filtering operation!
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Intentionally buggy: search button does not update `searchQuery` with `searchInput`
-    // setSearchQuery(searchInput); // Missing!
+  const isActive = (path: string) => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-cyan-600 text-white text-xs font-medium py-1.5 px-4 text-center flex items-center justify-center gap-2">
-        <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-300" />
-        <span>TECH ODYSSEY 2026 — Special Sale! Free Delivery on orders over $100</span>
-      </div>
-
+    <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 gap-4">
-          
-          {/* Logo & Tagline */}
-          <div className="flex items-center gap-3 cursor-pointer group select-none">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <ShoppingBag className="w-6 h-6" />
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-blue-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform">
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-2xl tracking-tight text-slate-900">NOVA</span>
-                <span className="font-extrabold text-2xl tracking-tight text-blue-600">MART</span>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-xl tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+                SKILLFORGE
+              </span>
+              <span className="text-[10px] tracking-widest text-violet-400 font-semibold uppercase -mt-1">
+                Learn. Practice. Build.
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive(link.href)
+                    ? 'text-white bg-slate-800/80 border border-slate-700/50'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Desktop Action Buttons / User Menu */}
+          <div className="hidden md:flex items-center gap-3">
+            {isLoggedIn ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm border border-slate-700 transition"
+                >
+                  <UserIcon className="w-4 h-4 text-violet-400" />
+                  <span className="font-medium">{user?.name || 'Dashboard'}</span>
+                </Link>
+                <button
+                  onClick={logout}
+                  className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+                  title="Log out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
-              <p className="text-[10px] tracking-wide text-slate-500 font-medium hidden sm:block">
-                Everything you need. One smart cart.
-              </p>
-            </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white transition"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/courses"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md shadow-violet-600/20 transition"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
 
-          {/* Search Bar (Bug 1 embedded in Search button trigger) */}
-          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-lg relative hidden md:flex items-center">
-            <input
-              type="text"
-              placeholder="Search products, categories, features..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner"
-            />
+          {/* Mobile Hamburger Button */}
+          <div className="flex md:hidden items-center">
             <button
-              type="submit"
-              aria-label="Search"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors shadow-sm"
+              onClick={toggleMobileMenu}
+              type="button"
+              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none"
+              aria-label="Toggle Navigation Menu"
             >
-              <Search className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Actions & Cart Icon */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors flex items-center justify-center"
-              aria-label="View Cart"
-            >
-              <ShoppingCart className="w-6 h-6" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-bounce">
-                  {cartItemCount}
-                </span>
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6 text-violet-400" />
+              ) : (
+                <Menu className="w-6 h-6 text-slate-200" />
               )}
             </button>
           </div>
         </div>
-
-        {/* Mobile Search Input */}
-        <div className="pb-3 md:hidden">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-4 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-600"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
-
-        {/* Category Navigation Bar */}
-        <div className="flex items-center gap-2 py-2 overflow-x-auto scrollbar-none border-t border-slate-100">
-          {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
       </div>
+
+      {/* Mobile Navigation Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-800 bg-slate-900 px-4 pt-3 pb-6 space-y-2 shadow-2xl">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`block px-3 py-2.5 rounded-lg text-base font-medium transition ${
+                isActive(link.href)
+                  ? 'text-white bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              {link.name}
+            </Link>
+          ))}
+          <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
+            {isLoggedIn ? (
+              <button
+                onClick={logout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-800 text-slate-200 hover:text-rose-400 text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4" /> Log Out
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="w-full text-center px-4 py-2.5 rounded-lg text-sm font-medium text-slate-200 bg-slate-800 hover:bg-slate-700"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/courses"
+                  className="w-full text-center px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

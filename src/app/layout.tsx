@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ShopProvider } from '@/context/ShopContext';
+import { LearningProvider } from '@/context/LearningContext';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'NOVA MART | Everything you need. One smart cart.',
-  description: 'TECH ODYSSEY 2026 - Official Nova Mart online store.',
+  title: 'SKILLFORGE — Learn. Practice. Build.',
+  description: 'Learn modern technology through practical courses, guided projects, and hands-on challenges.',
 };
 
 export default function RootLayout({
@@ -16,11 +18,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans`}>
-        <ShopProvider>
-          {children}
-        </ShopProvider>
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-slate-950 text-slate-100 flex flex-col min-h-screen selection:bg-violet-600 selection:text-white`}>
+        <LearningProvider>
+          <Header />
+          <main className="flex-grow">{children}</main>
+          <Footer />
+        </LearningProvider>
       </body>
     </html>
   );
