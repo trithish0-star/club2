@@ -63,6 +63,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, title }) => 
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsPlaying(!isPlaying);
+};
     const val = parseFloat(e.target.value);
     setVolume(val);
     if (videoRef.current) {
