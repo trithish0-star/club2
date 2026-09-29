@@ -168,6 +168,22 @@ export default function LandingPage() {
         <p>CloudGuard AI — Intelligent Cloud Cost Intelligence & Optimization Platform</p>
         <p className="mt-1">Built with React · Next.js · TypeScript · Tailwind CSS</p>
       </footer>
-    </div>
+    </div> 
+    const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!email.trim() || !password.trim()) {
+    setError('Please provide both email and password.');
+    return;
+  }
+
+  try {
+    setError('');
+    await login(email, password);
+    router.push('/dashboard');
+  } catch (err: any) {
+    setError(err.message || 'Failed to login');
+  }
+};
   );
 }
