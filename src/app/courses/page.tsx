@@ -30,7 +30,12 @@ export default function CourseCataloguePage() {
    * Actual: Checks `course.level === selectedCategory`, returning wrong results.
    */
   const filteredCourses = useMemo(() => {
-    return COURSES.filter((course) => {
+    return COURSES.filter((course) => {if (selectedCategory !== 'All') {
+      if (course.category !== selectedCategory) return false;
+    }
+    return true;
+  });
+}, [selectedCategory]);
       // Search filter
       const matchesSearch =
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
